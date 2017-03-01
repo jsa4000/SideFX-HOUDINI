@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Houdini cache foles
+*.bgeo.sc
+geo/
+backup/
 # C extensions
 *.so
 
