@@ -20,3 +20,4 @@ The particles will have velocity, forces and torque. These attributes will be us
 ![](/Images/debris_particles_sim_particlesSOP].jpg)
 
 ![](https://github.com/jsa4000/SideFX-HOUDINI/blob/master/Samples/Images/debris_particles_sim%5BparticlesSOP%5D.jpg)
+![](https://github.com/jsa4000/SideFX-HOUDINI/blob/master/Samples/Images/debris_particles_sim-FieldForceDOP.jpg)
