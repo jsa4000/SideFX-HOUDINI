@@ -1,0 +1,19 @@
+ Volume in drive C has no label.
+ Volume Serial Number is B4FD-92F8
+
+ Directory of C:\jsantos\Projects\GitHub\SideFX-HOUDINI\Samples\Images
+
+01/03/2017  16:41    <DIR>          .
+01/03/2017  16:41    <DIR>          ..
+01/03/2017  16:41                 0 all.txt
+01/03/2017  16:17           464,029 debris_particles_sim-FieldForceDOP.jpg
+01/03/2017  16:40           375,551 debris_particles_sim-FiniteSOP.jpg
+01/03/2017  16:40           207,025 debris_particles_sim-GroundSOP.jpg
+01/03/2017  16:40           237,594 debris_particles_sim-particlesPOP.jpg
+01/03/2017  16:40           267,080 debris_particles_sim-particlesSOP.jpg
+01/03/2017  16:40           400,503 debris_particles_sim-RIGIDColDOP.jpg
+01/03/2017  16:40           392,622 debris_particles_sim-RigidSOP.jpg
+01/03/2017  16:40           405,760 debris_particles_sim-SimDOP.jpg
+01/03/2017  16:17           370,504 debris_particles_sim[FINITEvsBulltetDOP].jpg
+              10 File(s)      3,120,668 bytes
+               2 Dir(s)  99,567,915,008 bytes free
