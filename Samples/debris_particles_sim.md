@@ -14,3 +14,9 @@ This Solver will accumulate the groups at frame step. Since it's a linear workfl
 
 The particles will have velocity, forces and torque. These attributes will be used later for the simulation and the advection part.
 
+![](/Images/debris_particles_sim[particlesSOP].jpg)
+
+
+![](/Images/debris_particles_sim_particlesSOP].jpg)
+
+![](/Images/debris_particles_sim_particlesSOP].jpg)
