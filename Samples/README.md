@@ -1,3 +1,3 @@
 # HOUDINI Samples
 
-[//]: <> (# SideFX-HOUDINI)
+<!-- (# SideFX-HOUDINI) -->
