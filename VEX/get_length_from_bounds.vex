@@ -1,0 +1,29 @@
+// Function that get the vector between the initial point and it's nn nearest neighbour 
+vector get_vector_nn(int initial_point; int nn_num; int normalize ) {
+	vector reference_Pos = point(0,"P",neighbour(0,initial_point,nn_num));
+	if (normalize) 
+		return normalize(point(0,"P",initial_point) - reference_Pos);
+	else 
+		return (point(0,"P",initial_point) - reference_Pos);
+}
+
+//Get the length dependinf on the axis
+float get_length(int point; vector axis) {
+	float size = -1;
+	vector nn;
+	for (int i=0; i < 3; i ++) {
+		nn = get_vector_nn(point, i, 0);
+		// Get the dot product and check if both are penpendicular
+		if (abs(dot(normalize(nn),axis)) == 1){
+			size = length(nn);
+			break;
+		}
+	}
+	return size;
+}
+
+// We have to search the nn that match with the angle for the curr axis we want to get the length
+// Get the Y, X and Z zize.
+f@sizex = get_length(0,{1.0,0.0,0.0});
+f@sizey = get_length(0,{0.0,1.0,0.0});
+f@sizez = get_length(0,{0.0,0.0,1.0});

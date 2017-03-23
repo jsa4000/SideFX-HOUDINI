@@ -1,0 +1,92 @@
+// Function that get the normalized vector between the 
+// initial point and it's nn nearest neighbour 
+vector get_vector_nn(int initial_point; int nn_num ) {
+	vector reference_Pos = point(0,"P",neighbour(0,initial_point,nn_num));
+	return normalize(point(0,"P",initial_point) - reference_Pos);
+}
+
+// First we will let's compute the averagin of the normals
+vector normal_av = set(0.0,0.0,0.0);
+vector current_N;
+
+//These two variables will be used to select the points to use:
+//
+//  pointseed: from 0 to the number of points
+//  pointdirection: the direction to take. The input only have 
+//				  two neighours.
+int pointseed = chi("point_seed");
+int pointdiection = chi("point_direction");
+
+// Initialize the values for the computation
+vector up_av = set(0.0,0.0,0.0);
+vector current_Up, aux_Up;
+float cosA, cosB;
+
+// Here I will check if the get procedural points seed it's active (pointseed = -1)
+if (pointseed == -1){
+	float max_dot_product = -222.22;
+	int pointseed_temp = -1;
+	
+	// Here I am going to iterate with in the points to find thee first points
+	// Orthogonal to its nearest neighbours. if not found get the point with the
+	// higher perpendicular angle.
+	for (int i = 0; i < @numpt; i++) {
+		// Get the two (first) nn connected to this points
+		vector nn1 = get_vector_nn(i,0);
+		vector nn2 = get_vector_nn(i,1);
+		// Get the Angle between them and check if they are totally orthogonal 
+		// to each other. If not, the angle and the point will be compared with the
+		// previous one to store the more orthogonal one in the input geometry.
+		float new_dot = dot(nn1,nn2);
+		// If this result cos(angle) = 0, then this means they are orthognal
+		if (new_dot == 0){
+			// If dot product is equal to 0 menas both vector gave 90 angle (ortho)
+			pointseed_temp = i;
+			// Break the while since we have succesfully found the point we were looking for.
+			break;
+		} else {
+			// If not then, We have to take the higher value to 0 (absolute)
+			if (abs(new_dot) < abs(max_dot_product)) {
+				max_dot_product = new_dot;
+				pointseed_temp = i;
+			}
+		} 
+	
+	}
+	// Finally set the pointseed with the temp point founded
+	pointseed = pointseed_temp;
+}
+
+// First we have to get a seed vector to be used as a reference.
+// by using the intial point seed and the direction 
+vector reference_Up = get_vector_nn(pointseed, pointdiection);
+
+//Loop for over all the points to get the average of the normals.
+for (int i = 0; i < @numpt; i++) {
+	// Get the normal for the current point position
+	current_N = point(0,"N",i);
+	// Add the current normal to the accumulative
+	 normal_av += current_N;
+  
+	//Let's get the nns to compare with the reference Up vector 
+	current_Up = get_vector_nn(i, 0);
+	aux_Up = get_vector_nn(i, 1);
+	// Compute both dots product
+	cosA = dot(current_Up, reference_Up);
+	cosB = dot(aux_Up, reference_Up);
+	//This two vector must be 1. 0 means to be perpendicular (cos).
+	if ( cosB > cosA ) {
+		current_Up = aux_Up;
+	}
+	// Add the current up vecot to the accumulative
+	up_av += current_Up;
+}
+
+// Set the tranformation matrix (average and normalized)
+3@M = maketransform(normalize(normal_av / @numpt),
+	   cross(normalize(up_av / @numpt), normalize(normal_av / @numpt)));
+			
+						  
+						  
+						  
+						  
