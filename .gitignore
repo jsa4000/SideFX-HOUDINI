@@ -9,7 +9,7 @@ geo/
 backup/
 # C extensions
 *.so
-*.hip
+#*.hip
 
 # Distribution / packaging
 .Python
