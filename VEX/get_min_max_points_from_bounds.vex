@@ -1,0 +1,27 @@
+//Declare top, bottom points
+vector pTop = set(0,0,0);
+vector pbottom = set(0,0,0);
+int i;
+
+//Get Bottom points
+for(i=0; i<4; i++){
+    pbottom += point(1, "P", i);
+}
+pbottom /= 4;
+
+//Get Top points
+for(i=4; i<8; i++){
+    pTop += point(1, "P", i);
+}
+pTop /= 4;
+
+// Add points in the correct order from 0 (bottom)
+// from 1 (Top)
+int pt_0 = addpoint(0, pbottom);
+int pt_1 = addpoint(0, pTop);
+
+// Create a polyline (not poly that would means
+// closed polygon)
+int prim1 = addprim(geoself(), "polyline");
+addvertex(geoself(), prim1, pt_0);
+addvertex(geoself(), prim1, pt_1);

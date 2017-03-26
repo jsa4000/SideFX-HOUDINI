@@ -1,0 +1,1 @@
+https://dimitriscg.wordpress.com/2015/09/16/group-selection-logic-in-houdini/
