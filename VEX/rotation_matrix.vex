@@ -1,0 +1,64 @@
+// Get the angle that will ge applied for the tranformations
+float angleX = chf("angleX");
+float angleY = chf("angleY");
+float angleZ = chf("angleZ");
+// Get the current axis used for the tranformation (local axis)
+vector AimAxis  = v@AimAxis;
+vector UpAxis = v@UpAxis;
+vector SideAxis  = v@SideAxis;
+
+// The idea here is not concatenating operations like in quaternions. 
+// Don't know if you can multiply a matrix of quaterinions to get the same result.
+
+// The idea is to get an unique matrix transformation and apply to all the points.
+
+/*
+
+// VEX doesn't allow using functions in 
+// the initialization use set instead
+
+matrix3 xmatrix = {{1.0, 0.0, 0.0},
+                   {0.0, cos(angleX), -sin(angleX)},
+                   {0.0, sin(angleX), cos(angleX)}};
+
+matrix3 ymatrix = {{cos(angleY), 0.0, -sin(angleY)},
+                   {0.0, 1.0, 0.0},
+                   {-sin(angleY), 0.0, cos(angleY)}};
+                 
+matrix3 zmatrix = {{cos(angleZ), -sin(angleZ), 0.0},
+                   {sin(angleZ), cos(angleZ), 0.0},
+                   {0.0, 0.0, 1.0}};
+*/
+
+// I can use iden function in VEX instead
+
+/*
+matrix3 custommatrix = {{1.0, 0.0, 0.0},
+                        {0.0, 1.0, 0.0},
+                        {0.0, 0.0, 1.0}};
+                   
+// Doesn't allow indexing                  
+matrix3 xmatrix = custommatrix;
+xmatrix[4] = cos(angleX);
+xmatrix[5] = -sin(angleX);
+xmatrix[7] = sin(angleX);
+xmatrix[8] = cos(angleX);
+*/
+
+// 3x3 matrix, no tranlation allowed
+matrix3 xmatrix = set(set(1.0, 0.0, 0.0),
+                   set(0.0, cos(angleX), -sin(angleX)),
+                   set(0.0, sin(angleX), cos(angleX)));
+                   
+matrix3 ymatrix = set(set(cos(angleY), 0.0, sin(angleY)),
+                   set(0.0, 1.0, 0.0),
+                   set(-sin(angleY), 0.0, cos(angleY)));
+                 
+matrix3 zmatrix = set(set(cos(angleZ), -sin(angleZ), 0.0),
+                   set(sin(angleZ), cos(angleZ), 0.0),
+                   set(0.0, 0.0, 1.0));
+
+
+//Apply the tranformation
+matrix3 rotMatrix = xmatrix * ymatrix * zmatrix;
+@P *= rotMatrix;
