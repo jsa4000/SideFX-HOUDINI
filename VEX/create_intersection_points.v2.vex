@@ -1,0 +1,147 @@
+#define empty {1234,1234,1234}
+#define epsilon 0.001
+
+// http://stackoverflow.com/questions/2316490/the-algorithm-to-find-the-point-of-intersection-of-two-3d-line-segment
+// Find the intersection between two lines
+float intersection(vector a; vector b; vector c; vector d; vector point0; vector point1)  {
+    //First condition, both lines doesn't have to be parallel
+    if (dot(normalize(b-a), normalize(d-c)) == 1) return -1;
+    /// Found p0 and p1 where the lines intersect
+    vector r = b - a;
+    vector s = d - c;
+    vector q = c - a;
+     // Get the slope for the vectors
+    float u = dot(cross(q,s), cross(r,s) / pow(cross(r,s),2));
+    float t = dot(cross(q,r), cross(r,s) / pow(cross(r,s),2));
+     //check if both s and t are from <0,1> 
+    if ((t >= 0 && t <= 1) && (u >= 0 && u <= 1)) {
+        // Following points will return a perpendicular vector
+        // where distance must be equal to 0
+        point0 = a + r * u;
+        point1 = c + s * t;
+        return length(point1 - point0);
+    } 
+    // If no intersection found return -1
+    return -1;
+}
+
+int same_point(vector point1; vector point2) {
+    if (abs(length(point2 - point1)) < epsilon) return 1;
+    return 0;
+}
+
+int prims_intersect(int input; int nprim1; int nprim2; vector point) {
+    // Get first two points from Prim 1
+    int points[] = primpoints(input,nprim1);
+    vector p1 = point(input,"P",points[0]);
+    vector p2 = point(input,"P",points[1]);
+    // Get first two points from Prim 2
+    int points2[] = primpoints(input,nprim2);
+    vector p3 = point(input,"P",points2[0]);
+    vector p4 = point(input,"P",points2[1]);
+    // check if the points are intersecting bacause same point
+    if (same_point(p1,p3) || same_point(p1,p4) || same_point(p2,p3) || same_point(p2,p4))
+        return 0;
+    // vector points
+    vector point1, point2;
+    // Compute the intersection
+    float dist = intersection(p1,p2,p3,p4, point1, point2);
+    if (dist > -1 && dist <= epsilon ) {
+        point = point1;
+        return 1;
+    }
+    return 0;
+}
+
+int create_prim(int input; int nprim; vector p3) {
+    //vector empty =  {1234,1234,1234};
+    // Get the current vector for the current primitive
+    int points[] = primpoints(input,nprim);
+    //printf("%d",len(points));
+    // This nodes supposes the primitivce it's a single line not a polygon
+    vector p1 = point(input,"P",points[0]);
+    vector p2 = point(input,"P",points[1]);
+    // Check If this primitive it's going to be created into the current geometry
+    int new_p1 = addpoint(0,p1);
+    int new_p2 = addpoint(0,p2);
+    //Create new Poly line
+    int new_prim = addprim(0, "polyline");
+    // Check if there is a point in the middle.
+    // This is to assure clock-wise addition to the poly
+    if (p3 == empty) {
+        // Add the priss normally
+        addvertex(0, new_prim, new_p1);
+        addvertex(0, new_prim, new_p2);
+     } else   { 
+        // Create another new prim
+        int new_p3 = addpoint(0,p3);
+        //Check the order for the primitives
+        if ((abs(length(p2-p1))) >= abs((length(p3-p1)))){
+            addvertex(0, new_prim, new_p1);
+            addvertex(0, new_prim, new_p3);
+            addvertex(0, new_prim, new_p2);
+        }
+        else {
+            addvertex(0, new_prim, new_p1);
+            addvertex(0, new_prim, new_p2);
+            addvertex(0, new_prim, new_p3);
+        }
+            
+    }
+    return new_prim;
+}
+
+int get_intersection(vector2 intersections[]; int i; int j){
+    for (int index = 0; index < len(intersections) - 1; index++) {
+        if ( (intersections[index].x == i && intersections[index].y == j) ||
+             (intersections[index].y == i && intersections[index].x == j) )
+            return index;
+    }
+    return -1;
+}
+
+int has_intersection(vector2 intersections[]; int i){
+    for (int index = 0; index < len(intersections) - 1; index++) {
+        if ( (intersections[index].x == i || intersections[index].y == i))
+            return 1;
+    }
+    return  0;
+}
+
+// Set the current input for the geometry
+int input = 1;
+// Create the variables
+vector intersection_point;
+vector2 intersections[];
+vector intersections_points[];
+
+// Iterate for all the primitives
+for (int i=0; i < nprimitives(input);i++) {
+    for (int j=0; j < nprimitives(input);j++) {    
+        if (i != j) { 
+           // Check if intersection
+            if (prims_intersect(input, i, j, intersection_point)) {
+                // Create the geometry with the intersection point
+                if (get_intersection(intersections,i,j) == -1) {
+                    create_prim(input, i, intersection_point);
+                    append(intersections, set(i,j));
+                    append(intersections_points, intersection_point );
+                }  else  {
+                    create_prim(input, i, intersection_point);
+                    intersections[get_intersection(intersections,i,j)] = set(i,j);
+                    intersections_points[get_intersection(intersections,i,j)] = intersection_point;
+                }
+            } 
+       }
+    } 
+}
+
+
+// Iterate for all the primitives
+for (int i=0; i < nprimitives(input);i++) {
+    // Check if intersection           
+    if (!has_intersection(intersections,i)) {
+        create_prim(input, i, empty);
+    } 
+}
+

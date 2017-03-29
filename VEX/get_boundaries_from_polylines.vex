@@ -1,0 +1,51 @@
+// This will create the boundaries for the geometry
+// The idea is follow the polygons but using the boundaries,
+// ignoring the inner points or polygons
+// {} []
+
+//Define the input for the incomming geometry
+int input = 1;
+
+// Take the first point as reference
+int ref_point = 0;
+int curr_point = -1;
+// These variables ar used to avoind infinite loops.
+int total_output_points = 0;
+int total_input_points = npoints(input);
+
+// Create teh intial polygon (closed)
+int out_prim = addprim(0, "polyline");
+
+// Define some empty variables.
+vector curr_point_pos;
+int curr_point_add, next_point;
+int connected_nn[];
+
+//The loop will end when the ref point and the currpoints 
+// will be the same. This means the polygon has closed correctly.
+while (ref_point != curr_point && total_output_points <= total_input_points) {
+    //Check if this is the first iteration to initialize
+    if (curr_point == -1) curr_point = ref_point;
+    // Add the current point to the boundaty
+    curr_point_pos = point(input,"P",curr_point);
+    curr_point_add = addpoint(0,curr_point_pos);
+    addvertex(0,out_prim,curr_point_add);
+    
+    // Get the nearest neighbours connected to the current point to decide 
+    // the direction to take and the next current point.
+    connected_nn = neighbours(input,curr_point);
+    
+    //Check if the current point is welded to the geometry
+    if (len(connected_nn) == 0){
+        printf("Error: The current point isn't connected to a primitive");
+        curr_point = ref_point;
+    } else {
+        // Now let's take the correct primitive and its closest point.
+        next_point = connected_nn[0];
+       
+        // Set the next point and increase the total number of points
+        curr_point = next_point;
+        total_output_points ++;
+    }
+  
+} 
