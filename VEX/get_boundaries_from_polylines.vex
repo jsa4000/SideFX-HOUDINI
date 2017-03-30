@@ -1,49 +1,184 @@
-// This will create the boundaries for the geometry
-// The idea is follow the polygons but using the boundaries,
-// ignoring the inner points or polygons
+#define MAX_ANGLE 999
+#define EPSILON 0.001
+
+// This will create the boundaries from the incoming geometry
+// The idea is following the points by using the boundaries,
+// ignoring the inner points or polygons. This means the algorithm
+// will take the min angle between the vectors formed by
+// the current points and its nearest neighbours.  The angle will look at
+// the oposdite to check of the current angle.
 // {} []
+
+
+// NOTES // 
+// 1. Depending on the orientation of the geoemtry, the order of the 
+//    the points in order to take the reference one (point == 0). This
+//    must be order taking some points on the boundary limits...
+//    If the geoemtry is totally vertical oriented, then order the 
+//        vertices in axis won't work.
+// 2. The initial direction that will be used in the first iteration
+//        will be fundamental to end with the final geometry we want... In this 
+//    case we can use some function to determine this behaviour.
+
+// I am going to decide the initial direction by averaging all the 
+// nnearest neigbours from the first point and the give the algorith 
+// to decide what point to take..   
+
+// Following function we have to modifed in order to change this behaviour
+vector get_initial_direction(int input; int point) {
+        vector result = set(0.0,0.0,0.0);
+        vector point_pos = point(input,"P",point);
+        // Get the nearest neighbours
+        int nearest_neighbours[] = neighbours(input,point);
+        // Now let's compute the average vector by using all the points connected
+        // to this point
+        foreach (int nn_point; nearest_neighbours) {
+            result += (point(input,"P",nn_point) - point_pos);     
+        }
+        return normalize(result/len(nearest_neighbours));
+}
+
+
+// This function is similar to the one provided by Houdini. However this function
+// won't consider overlapped or parallel edges. This means two edges can share 
+// the same points. 
+// This function will take a point and a vector and it will discard the points
+// with the same angle but higher distance.
+void get_neighbours(int input; int point; vector vector_to_compare; int resut_neighbours[] ) {
+        // Initilize the variable
+        resut_neighbours = {};
+        // Create the intial variables
+        int nearest_neighbours[];
+        float temp_angle, temp_dist = 0;
+        float temp_angles[], temp_dists[];
+        int nn_index = 0;
+        vector point_pos, nn_pos;
+        // Get the current point position and its current nearest neighbours 
+        point_pos = point(input,"P",point);
+        nearest_neighbours = neighbours(input, point);
+        //printf("   INCOMING (%d) \n",nearest_neighbours);
+        // Now let's take the next point with no shared angle.
+        foreach (int nn_point; nearest_neighbours) {
+                // Get the current angle and distance (magnitude) to the current nn
+                nn_pos = point(input,"P",nn_point);
+                temp_angle = acos(dot(vector_to_compare, normalize(nn_pos - point_pos)));
+                temp_dist = abs(length(nn_pos  - point_pos));
+                // Check if already exists
+                 //nn_index = find(temp_angles,temp_angle);
+                 nn_index = -1;
+                 foreach (int index; float angle;temp_angles){ 
+                    if ( abs(angle - temp_angle) <= EPSILON ) {
+                        // printf("        INDEX REPEATED; %d : %d \n", index, nn_point);
+                        nn_index = index; 
+                        break;
+                    }
+                 }
+                // Compare the angle with the previous one.
+                 if (nn_index >= 0) {
+                   // printf("    FOUNDED REPEATED DIST; %d : %d \n", temp_dists[nn_index], temp_dist);
+                    if (temp_dists[nn_index] > temp_dist) {
+                        //printf("    FOUNDED REPEATED2; %d : %d \n", point, nn_point);
+                         //Replace with this nn
+                         resut_neighbours[nn_index] = nn_point;
+                         temp_angles[nn_index] = temp_angle;
+                         temp_dists[nn_index] = temp_dist;
+                   }
+                 } else {
+                         // If does not found, Store it's information into the arrays
+                         append(resut_neighbours,nn_point);
+                         append(temp_angles, temp_angle);
+                         append(temp_dists, temp_dist);
+                 }
+                                         
+        }
+       //printf("   OUTCOMMING (%d) \n",resut_neighbours);
+}
 
 //Define the input for the incomming geometry
 int input = 1;
 
 // Take the first point as reference
+// The ref point is by default 0. In this case, Short the points by the 
+// normal or up axis it will be usefull.
 int ref_point = 0;
 int curr_point = -1;
+float temp_angle, min_angle = MAX_ANGLE;
 // These variables ar used to avoind infinite loops.
 int total_output_points = 0;
 int total_input_points = npoints(input);
 
 // Create teh intial polygon (closed)
-int out_prim = addprim(0, "polyline");
+int out_prim = addprim(0, "poly");
 
 // Define some empty variables.
-vector curr_point_pos;
-int curr_point_add, next_point;
-int connected_nn[];
+vector curr_point_pos, curr_prim_vector;
+int curr_point_add, next_point = 0;
+int connected_nn[], previous_points[];
 
-//The loop will end when the ref point and the currpoints 
-// will be the same. This means the polygon has closed correctly.
+// The loop will end when the ref point and the currpoint
+// will be the same. This means the polygon has been closed correctly.
+// Also the total number of added points will be taking into account
+// if the algoritm enter into an infinite loop, because some incongruences
+// or bad input geometry.
+
 while (ref_point != curr_point && total_output_points <= total_input_points) {
     //Check if this is the first iteration to initialize
-    if (curr_point == -1) curr_point = ref_point;
-    // Add the current point to the boundaty
+    if (curr_point == -1){ 
+        curr_point = ref_point;
+        curr_prim_vector = get_initial_direction(input, curr_point);
+    }
+                
+    // Get the curr point from the inputs
     curr_point_pos = point(input,"P",curr_point);
+    // Add the current point/vertex onto the output geometry
     curr_point_add = addpoint(0,curr_point_pos);
     addvertex(0,out_prim,curr_point_add);
     
     // Get the nearest neighbours connected to the current point to decide 
-    // the direction to take and the next current point.
-    connected_nn = neighbours(input,curr_point);
+    // the direction to take and the next point.
+    get_neighbours(input, curr_point, curr_prim_vector, connected_nn );
     
-    //Check if the current point is welded to the geometry
+    //Check if the current point is welded to the geometry properly
     if (len(connected_nn) == 0){
         printf("Error: The current point isn't connected to a primitive");
         curr_point = ref_point;
     } else {
-        // Now let's take the correct primitive and its closest point.
-        next_point = connected_nn[0];
-       
-        // Set the next point and increase the total number of points
+        // Initialized the min angle to MIN_ANGLE
+        min_angle = MAX_ANGLE;
+       // printf("   Neaerst Neightbourse (%d) \n",connected_nn);
+        // Now let's take the next point with minimun angle.
+        foreach (int nn_point; connected_nn) {
+            // Check current neighbours so we don't take the previous one.
+            if (nn_point == ref_point && total_output_points>= 2 ) {
+                next_point = nn_point;
+                // printf("   FIN \n");
+                break;
+             } else {
+                 if (find(previous_points, nn_point) >= 0) continue;
+                 // Get the angle between the current nn and the current point
+                 // with the previous segment already computed
+                temp_angle = acos(dot(curr_prim_vector, normalize(point(input,"P",nn_point) - curr_point_pos)));
+                           
+                 //printf("   Possible (%d): %f \n",nn_point,temp_angle);
+                 // Compare the angle with the previous one.
+                 if (temp_angle <= min_angle) {
+                        // Set the max angle and the next point
+                        min_angle = temp_angle;
+                        next_point = nn_point;
+                        //printf("   Find (%d) with %f \n",next_point,min_angle);
+                }
+             }
+         }
+
+        //printf("Current: %f degrees ,",min_angle); 
+        //printf(" From point %d to point %d \n", curr_point, next_point);
+        
+        // Set the current point to the list, so it will be skipped the next time
+        append(previous_points,curr_point);
+        // Set the current vector prim, the next point and increase 
+        // the total number of points
+        // Let compute the vector inverse.
+        curr_prim_vector = normalize(curr_point_pos - point(input,"P",next_point));
         curr_point = next_point;
         total_output_points ++;
     }

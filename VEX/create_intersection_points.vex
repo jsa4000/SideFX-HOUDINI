@@ -3,6 +3,7 @@
 
 // http://stackoverflow.com/questions/2316490/the-algorithm-to-find-the-point-of-intersection-of-two-3d-line-segment
 // Find the intersection between two lines
+// Find the intersection between two lines
 float intersection(vector a; vector b; vector c; vector d; vector point0; vector point1)  {
     //First condition, both lines doesn't have to be parallel
     if (dot(normalize(b-a), normalize(d-c)) == 1) return -1;
@@ -25,6 +26,11 @@ float intersection(vector a; vector b; vector c; vector d; vector point0; vector
     return -1;
 }
 
+int same_point(vector point1; vector point2) {
+    if (abs(length(point2 - point1)) < epsilon) return 1;
+    return 0;
+}
+
 int prims_intersect(int input; int nprim1; int nprim2; vector point) {
     // Get first two points from Prim 1
     int points[] = primpoints(input,nprim1);
@@ -34,6 +40,9 @@ int prims_intersect(int input; int nprim1; int nprim2; vector point) {
     int points2[] = primpoints(input,nprim2);
     vector p3 = point(input,"P",points2[0]);
     vector p4 = point(input,"P",points2[1]);
+    // check if the points are intersecting bacause same point
+    if (same_point(p1,p3) || same_point(p1,p4) || same_point(p2,p3) || same_point(p2,p4))
+        return 0;
     // vector points
     vector point1, point2;
     // Compute the intersection
@@ -44,14 +53,6 @@ int prims_intersect(int input; int nprim1; int nprim2; vector point) {
     }
     return 0;
 }
-
-vector point;
-i@intersetc = prims_intersect(0,0,1,point);
-v@point = point;
-
-addpoint(0,point);
-
-
 
 
 
