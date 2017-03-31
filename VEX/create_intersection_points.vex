@@ -4,25 +4,31 @@
 // http://stackoverflow.com/questions/2316490/the-algorithm-to-find-the-point-of-intersection-of-two-3d-line-segment
 // Find the intersection between two lines
 // Find the intersection between two lines
-float intersection(vector a; vector b; vector c; vector d; vector point0; vector point1)  {
+float intersection(vector a; vector b; vector c; vector d; vector point0; vector point1)  { 
     //First condition, both lines doesn't have to be parallel
     if (dot(normalize(b-a), normalize(d-c)) == 1) return -1;
     /// Found p0 and p1 where the lines intersect
-    vector r = b - a;
-    vector s = d - c;
-    vector q = c - a;
-     // Get the slope for the vectors
-    float u = dot(cross(q,s), cross(r,s) / pow(cross(r,s),2));
-    float t = dot(cross(q,r), cross(r,s) / pow(cross(r,s),2));
-     //check if both s and t are from <0,1> 
+    vector r = b - a; // da
+    vector s = d - c; // db
+    vector q = a - c; // dc
+    
+    float dotqr = dot(q,r);
+    float dotqs = dot(q,s);
+    float dotrs = dot(r,s);
+    float dotrr = dot(r,r);
+    float dotss = dot(s,s);
+    
+    float denom = dotrr * dotss - dotrs * dotrs;
+    float numer = dotqs * dotrs - dotqr * dotss;
+    
+    float t = numer / denom;
+    float u = (dotqs + t * dotrs) / dotss;
+  
     if ((t >= 0 && t <= 1) && (u >= 0 && u <= 1)) {
-        // Following points will return a perpendicular vector
-        // where distance must be equal to 0
-        point0 = a + r * u;
-        point1 = c + s * t;
-        return length(point1 - point0);
-    } 
-    // If no intersection found return -1
+        point0 = a + t * r;
+        point1 = c + u *s;
+        return abs(length(point1 - point0));
+    }
     return -1;
 }
 

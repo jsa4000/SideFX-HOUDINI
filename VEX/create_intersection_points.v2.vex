@@ -9,7 +9,35 @@
 // on several unknown variables. This way use some properties for the dot and cross vectos
 // between to lines. The idea is to find the smallest points in which the separation between
 // those lines are minumun.
-float intersection(vector a; vector b; vector c; vector d; vector point0; vector point1)  {
+float intersection(vector a; vector b; vector c; vector d; vector point0; vector point1)  { 
+    //First condition, both lines doesn't have to be parallel
+    if (dot(normalize(b-a), normalize(d-c)) == 1) return -1;
+    /// Found p0 and p1 where the lines intersect
+    vector r = b - a; // da
+    vector s = d - c; // db
+    vector q = a - c; // dc
+    
+    float dotqr = dot(q,r);
+    float dotqs = dot(q,s);
+    float dotrs = dot(r,s);
+    float dotrr = dot(r,r);
+    float dotss = dot(s,s);
+    
+    float denom = dotrr * dotss - dotrs * dotrs;
+    float numer = dotqs * dotrs - dotqr * dotss;
+    
+    float t = numer / denom;
+    float u = (dotqs + t * dotrs) / dotss;
+  
+    if ((t >= 0 && t <= 1) && (u >= 0 && u <= 1)) {
+        point0 = a + t * r;
+        point1 = c + u *s;
+        return abs(length(point1 - point0));
+    }
+    return -1;
+}
+
+/* float intersection2(vector a; vector b; vector c; vector d; vector point0; vector point1)  {
     //First condition, both lines doesn't have to be parallel
     if (dot(normalize(b-a), normalize(d-c)) == 1) return -1;
     /// Found p0 and p1 where the lines intersect
@@ -29,7 +57,7 @@ float intersection(vector a; vector b; vector c; vector d; vector point0; vector
     } 
     // If no intersection found return -1
     return -1;
-}
+} */
 
 // This will check if both points are the same. In order to check
 // this a threshold called epsilon is used instead round the values

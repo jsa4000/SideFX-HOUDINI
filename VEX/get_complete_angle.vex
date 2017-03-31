@@ -1,0 +1,54 @@
+#define PI 3.1415926535897932384
+
+void create_prim(vector p1; vector p2) {
+    // Check If this primitive it's going to be created into the current geometry
+    int new_p1 = addpoint(0,p1);
+    int new_p2 = addpoint(0,p2);
+    //Create new Poly line
+    int new_prim = addprim(0, "polyline");
+  
+    // Add the priss normally
+    addvertex(0, new_prim, new_p1);
+    addvertex(0, new_prim, new_p2);
+}
+
+int pivot_num = 10;
+int ref_num = 14;
+int check_num = 14;
+
+// Fet position for the points
+vector up = normalize(point(1,"N",pivot_num));
+vector pivot_pos = point(1,"P",pivot_num);
+vector ref_pos = point(1,"P",ref_num);
+vector check_pos = point(1,"P",check_num);
+
+// Create reference primitive
+create_prim(pivot_pos, ref_pos);
+
+// Rotate vector by using quaternion and Up axis to rotate
+vector4 qrot = quaternion(chf("angle")*(PI/180), up);
+check_pos = qrotate( qrot, check_pos);
+create_prim(pivot_pos, check_pos);
+
+// Create vector direction
+vector ref_vector = normalize(ref_pos - pivot_pos); // Will point to origin (pivot)
+vector check_vector = normalize(check_pos - pivot_pos); // Will point to origin (pivot)
+
+// Get the angle between 0 and 2PI
+float angle = acos(dot(ref_vector, check_vector));
+int first_half = sign(dot(up, cross(ref_vector, check_vector))) >= 0;
+angle = first_half ? angle : 2*PI - angle;
+//@angle = degrees(angle);
+@angle = (angle);
+
+//@angle2  = atan2(normalize(cross(down,mvector)), dot(down,mvector));
+ 
+// Get the angle between two vectors. The returned values will be
+// inside the interval from 0 to 2*PI. Dot product only return
+// values from to PI, for this reason this algorithm is useful to
+// get more precise values,
+float get_angle(vector v1; vector v2;vector up) {
+    float angle = acos(dot(v1, v2));
+    int half = sign(dot(up, cross(v1, v2))) >= 0;
+    return half ? angle : 2*PI - angle;
+}
