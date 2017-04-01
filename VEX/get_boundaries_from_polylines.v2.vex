@@ -24,9 +24,7 @@
 // I am going to decide the initial direction by averaging all the 
 // nnearest neigbours from the first point and the give the algorith 
 // to decide what point to take..   
-
-// Following function we have to modifed in order to change this behaviour
-vector get_initial_direction(int input; int point) {
+vector get_initial_direction(int input; int point) { 
         vector result = set(0.0,0.0,0.0);
         vector point_pos = point(input,"P",point);
         // Get the nearest neighbours
@@ -34,7 +32,8 @@ vector get_initial_direction(int input; int point) {
         // Now let's compute the average vector by using all the points connected
         // to this point
         foreach (int nn_point; nearest_neighbours) {
-            result += (point(input,"P",nn_point) - point_pos);     
+            //result += (point(input,"P",nn_point) - point_pos);   
+            result += (normalize(point(input,"P",nn_point) - point_pos)); 
         }
         return normalize(result/len(nearest_neighbours));
 }
@@ -69,7 +68,7 @@ void get_neighbours(int input; int point; vector vector_to_compare; int resut_ne
         vector point_pos, point_norm, nn_pos;
         // Get the current point position and its current nearest neighbours 
         point_pos = point(input,"P",point);
-        point_norm = point(input,"N",point);
+        point_norm = (point(input,"N",point));
         nearest_neighbours = neighbours(input, point);
         //printf("   INCOMING (%d) \n",nearest_neighbours);
         // Now let's take the next point with no shared angle.
@@ -156,16 +155,16 @@ while (ref_point != curr_point && total_output_points <= total_input_points) {
     
     // Get the nearest neighbours connected to the current point to decide 
     // the direction to take and the next point.
-    get_neighbours(input, curr_point, curr_prim_vector, connected_nn );
+    get_neighbours(input, curr_point, curr_prim_vector, connected_nn);
     
     //Check if the current point is welded to the geometry properly
     if (len(connected_nn) == 0){
-        printf("Error: The current point isn't connected to a primitive");
+        //printf("Error: The current point isn't connected to a primitive");
         curr_point = ref_point;
     } else {
         // Initialized the min angle to MIN_ANGLE
         min_angle = MAX_ANGLE;
-       // printf("   Neaerst Neightbourse (%d) \n",connected_nn);
+        //printf("   Neaerst Neightbourse (%d) \n",connected_nn);
         // Now let's take the next point with minimun angle.
         foreach (int nn_point; connected_nn) {
             // Check current neighbours so we don't take the previous one.
@@ -192,7 +191,7 @@ while (ref_point != curr_point && total_output_points <= total_input_points) {
          }
 
         //printf("Current: %f degrees ,",min_angle); 
-       // printf(" From point %d to point %d \n", curr_point, next_point);
+        //printf(" From point %d to point %d \n", curr_point, next_point);
         
         // Set the current point to the list, so it will be skipped the next time
         append(previous_points,curr_point);

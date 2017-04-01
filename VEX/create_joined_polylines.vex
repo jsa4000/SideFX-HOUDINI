@@ -1,100 +1,85 @@
-#define empty {1234,1234,1234}
-
-// Find the intersection between this primitive with the others
-int lines_intersect(vector A; vector B; vector C; vector D; vector point)  {
-    vector da = B - A;
-    vector db = D - C;
-    vector dc = C - A;
-     // Get the slope for the vectors
-    float s = dot(cross(dc,db), cross(da,db)/pow(cross(da,db),2));
-    float k = dot(cross(dc,da), cross(da,db)/pow(cross(da,db),2));
-     //check if both s and t are from <0,1> 
-    if ((s >= 0 && s <= 1) && (k >= 0 && k <= 1)) {
-        point = set(A.x + da.x * s, A.y + da.y * s, A.z + da.z * s);
-        return 1;
-    } 
-    // If no intersection return -1
-    return 0;
+float round(float number; int decimals) {
+    return ((number * pow(10, decimals)) / pow(10, decimals));
 }
 
-int prims_intersect(int input; int nprim1; int nprim2; vector point) {
-    // Get first two points from Prim 1
-    int points[] = primpoints(input,nprim1);
-    vector p1 = point(input,"P",points[0]);
-    vector p2 = point(input,"P",points[1]);
-    // Get first two points from Prim 2
-    int points2[] = primpoints(input,nprim2);
-    vector p3 = point(input,"P",points2[0]);
-    vector p4 = point(input,"P",points2[1]);
-    // Compute the intersection
-    return lines_intersect(p1,p2,p3,p4, point);
-}
 
-int create_prim(int input; int nprim; vector p3) {
-    //vector empty =  {1234,1234,1234};
-    // Get the current vector for the current primitive
-    int points[] = primpoints(input,nprim);
-    //printf("%d",len(points));
-    // This nodes supposes the primitivce it's a single line not a polygon
-    vector p1 = point(input,"P",points[0]);
-    vector p2 = point(input,"P",points[1]);
-    // Check If this primitive it's going to be created into the current geometry
-    int new_p1 = addpoint(0,p1);
-    int new_p2 = addpoint(0,p2);
-    //Create new Poly line
-    int new_prim = addprim(0, "polyline");
-    // Check if there is a point in the middle.
-    // This is to assure clock-wise addition to the poly
-    if (p3 == empty) {
-        // Add the primis normally
-        addvertex(0, new_prim, new_p1);
-        addvertex(0, new_prim, new_p2);
-     } else   { 
-        // Create another new prim
-        int new_prim2 = addprim(0, "polyline");
-        int new_p3 = addpoint(0,p3);
-         
-        //Check the order for the primitives
-        if ((length(p1-p2)) > (length(p1-p3))){
-            // Add the prim 1
-            addvertex(0, new_prim, new_p1);
-            addvertex(0, new_prim, new_p3);
-             // Add the prim 2
-            addvertex(0, new_prim2, new_p3);
-            addvertex(0, new_prim2, new_p2);
-        }
-        else {
-            // Add the prim 1
-            addvertex(0, new_prim, new_p1);
-            addvertex(0, new_prim, new_p2);
-            // Add the prim 2
-            addvertex(0, new_prim2, new_p2);            
-            addvertex(0, new_prim2, new_p3);
-        }
-            
-    }
-    return new_prim;
-}
+// This function will take the original path as the base, amnd from this
+// line the function will create the polyline with the points passed by parameters
+// The function will ignore the points that will be equal to the original
+// primitive.
+int create_prim(int input_geo; int original_prim; vector points[]){
 
-// Set the current input for the geometry
-int input = 1;
-// Create the variables
-vector intersection_point;
+    // 1. GET THE REFERENCE POINT
 
-// Iterate for all the primitives
-for (int i=0; i < nprimitives(input);i++) {
-    for (int j=0; j < nprimitives(input);j++) {     
-        if (i != j) {
-            // Check if intersection
-            if (prims_intersect(input, i, j, intersection_point)) {
-               // Create the geometry with the intersection point
-                create_prim( input, i, intersection_point);
-            } else {
-                // Create the geometry without the intersection point
-                create_prim( input, i, empty);
-            }
-        }
- 
+    // First I will take the first point in the original path as reference
+    int points_original_path[] = primpoints(input_geo, original_prim);
+    int ref_point = points_original_path[0];
+    vector ref_position, temp_position;
+    
+    //Get the point position and add into the output geometry
+    ref_position = point(input_geo, "P", ref_point);
+    ref_point = addpoint(0, ref_position);
+    
+    // 2. GET THE MAGNITUDE BETWEEN POINTS AND REFERENCE POINT
+    
+    // Create a new array that will store all the points and its magnitudes
+    float prim_magnitudes[];
+    int prim_points[];
+    
+    // First, Add the points from the original primitive, but the reference point, 
+    // into the array of points to use. Since it could be more than one point, 
+    // I will make a loop to iterate for all over the points.
+    for (int i = 1; i < len(points_original_path); i++) {
+        temp_position = point(input_geo, "P", points_original_path[i]);
+        append(prim_magnitudes, length2(temp_position - ref_position));
+        // Create current point into the output geometry
+        append(prim_points, addpoint(0,temp_position));
     }
     
+    // First, Copy the points from the original primitive, skipping the reference point.
+    // Into the array of points to use. Since it could be more than one point, 
+    // I will make a loop to iterate for all over the points.
+    for (int i = 0; i < len(points); i++) {
+        temp_position = points[i];
+        append(prim_magnitudes, length2(temp_position - ref_position));
+        // Create current point into the output geometry
+        append(prim_points, addpoint(0,temp_position));
+    }
+
+    // 3. SORT THE VALUES BY MAGNITUDE
+    
+    // Sort the points by the magnitude computed. However I want the indexes
+    // sortened not the values itself
+    int sorted_indexes[] = argsort(prim_magnitudes);
+           
+    // 4. CREATE THE PRIMITIVE //
+    
+    // Create the result primitive with all the points
+    int result_prim = addprim(0, "polyline");
+    float current_magnitude, previous_magnitude = -1;
+    
+    // Add the reference point first
+    addvertex(0, result_prim, ref_point);
+    
+    // Add the rest of the values in order of magnitude by using the array with
+    // the indexes tu use.
+    foreach (int index; sorted_indexes ){
+        // Get the ordered magnitude from the array
+        current_magnitude = prim_magnitudes[index];
+        // Check if the magnitude was the same to the previous to avoid points
+        // in the same position
+        if (round(current_magnitude,4) != round(previous_magnitude,4) &&
+            round(current_magnitude,4) != 0 ) {
+            // Add the current vertex
+            addvertex(0, result_prim, prim_points[index]);
+            // Set the previous magnitude tfor the next iteration
+            previous_magnitude = current_magnitude;
+          } else {
+            // Remove current point previously created.
+            removepoint(0,prim_points[index]);
+         }
+        
+    }
+    return result_prim;
+
 }
