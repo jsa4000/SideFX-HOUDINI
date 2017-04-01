@@ -1,0 +1,88 @@
+#define empty {1234,1234,1234}
+#define epsilon 0.001
+
+// http://stackoverflow.com/questions/2316490/the-algorithm-to-find-the-point-of-intersection-of-two-3d-line-segment
+//
+// Find the intersection between two lines
+//
+// The way that this algorithm works differs from other algoritms that use linear equations based
+// on several unknown variables. This way use some properties like the dot and cross product 
+// between two lines. The idea is to find the smallest points in which the separation between
+// those lines are minumun. This will be the intersection point.
+float intersection(vector a; vector b; vector c; vector d; vector point0; vector point1)  { 
+    //First condition, both lines doesn't have to be parallel
+    if (dot(normalize(b-a), normalize(d-c)) == 1) return -1;
+    /// Found p0 and p1 where the lines intersect
+    vector r = b - a; // da
+    vector s = d - c; // db
+    vector q = a - c; // dc
+    // Get the dot between several relationships
+    float dotqr = dot(q,r);
+    float dotqs = dot(q,s);
+    float dotrs = dot(r,s);
+    float dotrr = dot(r,r);
+    float dotss = dot(s,s);
+    // Solve the equations
+    float denom = dotrr * dotss - dotrs * dotrs;
+    float numer = dotqs * dotrs - dotqr * dotss;
+    // Get the t and u that will determine the intersection point in common 
+    float t = numer / denom;
+    float u = (dotqs + t * dotrs) / dotss;
+    // Check if the intersection is in [0,1]
+    if ((t >= 0 && t <= 1) && (u >= 0 && u <= 1)) {
+        point0 = a + t * r;
+        point1 = c + u *s;
+        return abs(length(point1 - point0));
+    }
+    return -1;
+}
+
+// This will check if both points are the same. In order to check
+// this, a threshold called epsilon is used instead round the values
+// so the precision on the float variable is fixed.
+int same_point(vector point1; vector point2) {
+    if (abs(length(point2 - point1)) < epsilon) return 1;
+    return 0;
+}
+
+// Following function is used to take additional step to the intersection
+// formula. This previosly check both primitives are not parallel, don't
+// share any edges and the difference between the points intersection
+// onto the both primitives are near to epsilon (0).
+//
+// Shared points is tricky because the algorithm will detect those points as
+// intersection. This is somthing that in this case need to be considered.
+int prims_intersect(int input; int nprim1; int nprim2; vector point) {
+    // Get first two points from Prim 1
+    int points[] = primpoints(input,nprim1);
+    vector p1 = point(input,"P",points[0]);
+    vector p2 = point(input,"P",points[1]);
+    // Get first two points from Prim 2
+    int points2[] = primpoints(input,nprim2);
+    vector p3 = point(input,"P",points2[0]);
+    vector p4 = point(input,"P",points2[1]);
+    // check if the points are intersecting bacause same point
+    if (same_point(p1,p3) || same_point(p1,p4) || same_point(p2,p3) || same_point(p2,p4))
+        return 0;
+    // vector points
+    vector point1, point2;
+    // Compute the intersection
+    float dist = intersection(p1,p2,p3,p4, point1, point2);
+    if (dist > -1 && dist <= epsilon ) {
+        point = point1;
+        return 1;
+    }
+    return 0;
+}
+
+
+
+// The idea with with this new version is to create better geometry.
+
+
+
+
+
+
+
+

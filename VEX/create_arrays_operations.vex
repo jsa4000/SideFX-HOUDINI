@@ -1,0 +1,55 @@
+// The idea is to sort a list by using the default functions in VEX
+// argsort returns an array, this will return a list with the order
+
+// Create an array by appending the values to the end of the array
+int myarray[];
+
+append(myarray,1);
+append(myarray,2);
+append(myarray,5);
+append(myarray,7);
+append(myarray,9);
+append(myarray,4);
+
+// This will isnert an element in the first index, the
+// rest of the elements will be moved one postion to the right
+// to the left.
+insert(myarray,0,0);
+
+// The insert operation allow to insert an element in an
+// index that isn't created yet. The in-middle items will
+// be set with a default value 0
+insert(myarray,10,10);
+
+
+// Sort the arra. Depending on the type of the varable the
+// sort operation will be operate in particular wy.
+int sorted[] = sort(myarray);
+
+// The other way to sort an array is by using the argsort. In 
+// this case for each item a value will be given to show
+// the new index that each items will have in the sorted array.
+// This is useful in the case you have several list, based 
+// on the same indexes and you want to sort every array also.
+int sortedargs[] = argsort(myarray);
+int resortedargs[] = reorder(myarray, sortedargs);
+
+printf("-------------------------------- \n");  
+printf("- NORMAL ARRAY \n");  
+printf("%d; %d \n",myarray,len(myarray));  
+printf("- SORTED ARRAY \n");  
+printf("%d; %d \n",sorted,len(sorted)); 
+printf("Check if original array has been modified: %d; %d \n",myarray,len(myarray));  
+printf("- ARGSORTED ARRAY \n");  
+printf("%d; %d \n",sortedargs,len(sortedargs)); 
+
+printf("-------------------------------- \n");  
+
+
+foreach (int index; sortedargs){
+    printf("%d, ",myarray[index] ); 
+}
+printf("\n");  
+printf("- REORDER ARRAY \n");  
+printf("%d; %d \n",resortedargs,len(resortedargs)); 
+printf("-------------------------------- \n");  
