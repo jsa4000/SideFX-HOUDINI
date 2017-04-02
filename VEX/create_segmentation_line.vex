@@ -1,0 +1,89 @@
+// Variables that I need for dinamically create
+// the initial structure for the building. [] {}
+
+///////////////////////////////
+// FUNCTIONS 
+//////////////////////////////
+
+// This function creates a section. This creates a point and also it 
+//  attributes with the section and its height
+int create_section(vector position; int section; float height) {
+    int result = addpoint(0, position);
+    setpointattrib(0, "sectionid", result, section, "set"); 
+    setpointattrib(0, "height", result, height, "set"); 
+    return result;
+}
+
+// This function creates a section. This creates a point and also it 
+//  attributes with the section and its height
+void initialize(int primnum) {
+    int points[] = primpoints(0, primnum);    
+    // DEfine the initial section with the point number 0
+    setpointattrib(0, "sectionid", points[0], 0, "set"); 
+    setpointattrib(0, "height", points[0], 0.0, "set"); 
+    // Define the last section with the point number 1
+    setpointattrib(0, "sectionid", points[1], 10, "set"); 
+    setpointattrib(0, "height", points[1], 0.0, "set"); 
+} 
+
+
+//////////////////////////////
+
+// Random seed to randomilly create the building
+float seed = chf("seed");
+
+// Building height. For this height I will use the initial
+// height. This could be get from intial block geometry.
+float total_height = chf("total_height");
+
+// The number of floors will be determined by the initial
+// height and the other elements. 
+float max_floor_height = chf("max_floor_height");
+float min_floor_height = chf("min_floor_height");
+
+// First Floor and Roof Floor.
+float first_floor = chf("first_floor");
+float roof_floor = chf("last_floor");
+
+// Separation between floors
+float separation = chf("separation");
+
+// Additiomal floor.
+float additonal_floor = chf("additonal_floor");
+float additonal_floor_height = chf("additonal_floor_height");
+
+// Define intial variables
+float u, temp_height;
+vector temp_point_pos;
+int temp_point;
+float v = 0.0; // There is no v in this case
+
+// Set the attributes for the top and bottom points, 0 and 1
+initialize(@primnum);
+
+// In this case I have to create the first two points (first_floor and roof_floor);
+// This will divide the building into three parts.
+if (first_floor > 0){
+    // Avoid the points will surpass to each other
+    if (first_floor >= roof_floor) first_floor = roof_floor;
+    // Create a point into that u
+    prim_attribute(@OpInput1, temp_point_pos, "P", @primnum, first_floor, v); 
+    // Creates the point with the height and the section id
+    create_section(temp_point_pos, 1, (first_floor * total_height));
+}
+
+// In this case I have to create the first two points (first_floor and roof_floor);
+// This will divide the building into three parts.
+if (roof_floor < 1){
+    // Avoid the points will surpass to each other
+    if (roof_floor <= first_floor) roof_floor = first_floor;
+    // Create a point into that u
+    prim_attribute(@OpInput1, temp_point_pos, "P", @primnum, roof_floor, v); 
+    // Creates the point with the height and the section id
+    create_section(temp_point_pos, 9, total_height - (total_height * roof_floor));
+}
+
+
+
+
+
