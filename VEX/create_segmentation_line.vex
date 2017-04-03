@@ -1,89 +1,184 @@
+#define MAX_SECTION 10
+#define MIN_SECTION 0
+#define SECTION_ATTRIBUTE_NAME "sectionid"
+#define HEIGHT_ATTRIBUTE_NAME "height"
+
 // Variables that I need for dinamically create
-// the initial structure for the building. [] {}
+// the initial segmentation for the line. [] {}
 
 ///////////////////////////////
 // FUNCTIONS 
 //////////////////////////////
 
 // This function creates a section. This creates a point and also it 
-//  attributes with the section and its height
+//  attributes with the current sectio idn and its intial height.
 int create_section(vector position; int section; float height) {
     int result = addpoint(0, position);
-    setpointattrib(0, "sectionid", result, section, "set"); 
-    setpointattrib(0, "height", result, height, "set"); 
+    setpointattrib(0, SECTION_ATTRIBUTE_NAME, result, section, "set"); 
+    setpointattrib(0, HEIGHT_ATTRIBUTE_NAME, result, height, "set"); 
     return result;
 }
 
-// This function creates a section. This creates a point and also it 
-//  attributes with the section and its height
-void initialize(int primnum) {
-    int points[] = primpoints(0, primnum);    
+// This function creates a section. This will creates point attributes
+// with defaults section id and its height.
+void initialize(int bottom_point; int top_point) {
     // DEfine the initial section with the point number 0
-    setpointattrib(0, "sectionid", points[0], 0, "set"); 
-    setpointattrib(0, "height", points[0], 0.0, "set"); 
+    setpointattrib(0, SECTION_ATTRIBUTE_NAME, bottom_point, MIN_SECTION, "set"); 
+    setpointattrib(0, HEIGHT_ATTRIBUTE_NAME, bottom_point, 0.0, "set"); 
     // Define the last section with the point number 1
-    setpointattrib(0, "sectionid", points[1], 10, "set"); 
-    setpointattrib(0, "height", points[1], 0.0, "set"); 
+    setpointattrib(0, SECTION_ATTRIBUTE_NAME, top_point, MAX_SECTION, "set"); 
+    setpointattrib(0, HEIGHT_ATTRIBUTE_NAME, top_point, 0.0, "set"); 
 } 
 
-
 //////////////////////////////
+// INITIALIZING VARIABLLES
+///////////////////////////////
 
-// Random seed to randomilly create the building
+// Random seed and probability to randomilly create the sections and segments
 float seed = chf("seed");
+float probability = chf("probability");
 
-// Building height. For this height I will use the initial
-// height. This could be get from intial block geometry.
+// Total height. This height will be used to get the correct scale of the uv. 
+// This could be get from intial block geometry or a line.
 float total_height = chf("total_height");
 
-// The number of floors will be determined by the initial
-// height and the other elements. 
-float max_floor_height = chf("max_floor_height");
-float min_floor_height = chf("min_floor_height");
+// The sections will be constrained by this height. This will be used for
+// scaling pourposes. The number of inbetween segments will be determined by 
+// this value
+float min_section_height = chf("min_section_height");
 
-// First Floor and Roof Floor.
-float first_floor = chf("first_floor");
-float roof_floor = chf("last_floor");
+// First Section and Top Section .
+float bottom_section_height  = chf("bottom_section");
+float top_section_height  = chf("top_section");
 
-// Separation between floors
-float separation = chf("separation");
+// Separation between sections
+float separator_height = chf("separator_height");
 
-// Additiomal floor.
-float additonal_floor = chf("additonal_floor");
-float additonal_floor_height = chf("additonal_floor_height");
+// Additiomal Sections.
+float additonal_section_counter = chi("additonal_sections");
+float additonal_section_height = chf("additonal_section_height");
 
 // Define intial variables
-float u, temp_height;
 vector temp_point_pos;
 int temp_point;
-float v = 0.0; // There is no v in this case
+// Default value for the v value in prims
+float u, v = 0.0;
+
+//////////////////////////////
+// CONSTRAINT THE VALUES
+///////////////////////////////
+
+// Clamp the values to be constrained on the min and max values
+
+// Constraint the top and the bottom sections. They cannot be lower than the min
+// size allowed for the sections. In this case, the can surpass the max size.
+if (bottom_section_height < min_section_height) bottom_section_height = min_section_height;
+if (top_section_height < min_section_height) top_section_height = min_section_height;
+// Constraint the bottom and the top, so the won't surpass the total height
+if (bottom_section_height > total_height) bottom_section_height = total_height;
+if (top_section_height > total_height) top_section_height = total_height;
+// Avoid the top and bottom sections will surpass to each other
+if (separator_height > min_section_height) separator_height = min_section_height;
+
+//////////////////////////////
+// GET RELATIVE VALUES 
+///////////////////////////////
+
+// Get the intial u [0:1] for the top and the botoom if any. This is used to
+// stablish relation for the scale and the segments.
+
+// To compute the bottom section I need to compute the percentage of the
+// section comparted to the total height.
+float u_bottom_section = bottom_section_height / total_height;
+// The Top part will be the same. However, I need to substract 1 
+float u_top_section = 1 - (top_section_height / total_height);
+// The Separator part will be the same.  
+float u_separator = separator_height / total_height;
+
+// In the case the Bottom part will move the top part. This part is better
+// to do usign u relative coordinates.
+if (u_top_section <= u_bottom_section ) {
+        u_top_section = u_bottom_section;
+        //Also set the new heights
+        top_section_height = total_height - bottom_section_height;
+} 
+
+//////////////////////////////
+// START PROGRAM
+///////////////////////////////
+
+// Prerequisites for this node to work is a primitive that contains two points. The 
+// frist one, will be interpreted as the bottom and the last one as the top.
+// Since this node use prims uvs to get the points positions for the segments 
+// the line could be in any direction or size.
+
+// 1. INITIALIZE THE SECTIONS 
 
 // Set the attributes for the top and bottom points, 0 and 1
-initialize(@primnum);
+// For this get the points from the current Input (line)
+int initial_points[] = primpoints(0, @primnum);    
+initialize(initial_points[0], initial_points[1]);
 
-// In this case I have to create the first two points (first_floor and roof_floor);
-// This will divide the building into three parts.
-if (first_floor > 0){
-    // Avoid the points will surpass to each other
-    if (first_floor >= roof_floor) first_floor = roof_floor;
+// 2. SET THE TOP AND BOTTOM SECTIONS.
+
+// In this case I have to create the first two points (u_bottom_section 
+// and u_top_section). This will divide the initial segment into three parts.
+if (u_bottom_section > 0){
     // Create a point into that u
-    prim_attribute(@OpInput1, temp_point_pos, "P", @primnum, first_floor, v); 
+    prim_attribute(@OpInput1, temp_point_pos, "P", @primnum, u_bottom_section, v); 
     // Creates the point with the height and the section id
-    create_section(temp_point_pos, 1, (first_floor * total_height));
+    create_section(temp_point_pos, MIN_SECTION + 1, 0.0);   
+    // Update the height for the first point
+    setpointattrib(0, HEIGHT_ATTRIBUTE_NAME, initial_points[0], bottom_section_height , "set"); 
 }
 
-// In this case I have to create the first two points (first_floor and roof_floor);
-// This will divide the building into three parts.
-if (roof_floor < 1){
-    // Avoid the points will surpass to each other
-    if (roof_floor <= first_floor) roof_floor = first_floor;
+// In this case I have to create the first two points (u_bottom_section 
+// and u_top_section). This will divide the building into three parts.
+if (u_top_section < 1){
     // Create a point into that u
-    prim_attribute(@OpInput1, temp_point_pos, "P", @primnum, roof_floor, v); 
+    prim_attribute(@OpInput1, temp_point_pos, "P", @primnum, u_top_section, v); 
     // Creates the point with the height and the section id
-    create_section(temp_point_pos, 9, total_height - (total_height * roof_floor));
+    create_section(temp_point_pos, MAX_SECTION - 1, top_section_height);
 }
 
+// 3. SET THE MIDDLE SECTIONS
 
+// Now lets build the setcion inbetween. For this I need to consider the u top/bottom
+//sections previously created. Also I will create the sperators and the additional floors. 
 
+// I must recompute the new heights for the sections since they could have been changed.
 
+// Get the total middle sections and separations into the proper scale
+float middle_section_height =  (total_height * (u_top_section - u_bottom_section)) ;
+// Get the total of small middle sections
+int total_middle_sections = floor(middle_section_height / (min_section_height + separator_height));
 
+// Get the height for each floor and separator 
+
+// IMPORTANT: Float casting in need for the compiler to do the division in floating point
+float u_total_small_section_length = (u_top_section - u_bottom_section) * (1 / float(total_middle_sections));
+// Get both separator and section real heights.
+float u_small_section_length = u_total_small_section_length - u_separator;
+//printf("Total Sections (%d) : Small Section Height %f \n", total_middle_sections , u_total_small_section_length );
+float section_offset;
+
+// For each section create the points and attributes.
+for (int i=0; i < total_middle_sections;i++){
+    //printf("Floors (%d): %d \n",i, temp_height );
+        section_offset = (u_total_small_section_length * i) + u_bottom_section;
+    // Create the secttion
+    prim_attribute(@OpInput1, temp_point_pos, "P", @primnum,section_offset , v); 
+    create_section(temp_point_pos, 2, u_small_section_length);
+    // Check if separator must be created
+    if (u_separator > 0) {
+        prim_attribute(@OpInput1, temp_point_pos, "P", @primnum, section_offset - u_separator, v); 
+        create_section(temp_point_pos, 3, u_separator);
+    }
+}
+
+// Add additional separator before the middle section start
+if (u_separator > 0) {
+    section_offset = (u_total_small_section_length * total_middle_sections) + u_bottom_section;
+    prim_attribute(@OpInput1, temp_point_pos, "P", @primnum, section_offset - u_separator, v); 
+    create_section(temp_point_pos, 3, u_separator);
+}
