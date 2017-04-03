@@ -43,7 +43,7 @@ if (pointseed == -1){
                 float new_dot = dot(nn1,nn2);
                 // If this result cos(angle) = 0, then this means they are orthognal
                 if (new_dot == 0){
-                        // If dot product is equal to 0 menas both vector gave 90 angle (ortho)
+                        // If dot product is equal to 0 means both vector gave 90 angle (ortho)
                         pointseed_temp = i;
                         // Break the while since we have succesfully found the point we were looking for.
                         break;
