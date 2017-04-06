@@ -1,4 +1,6 @@
 #define EMPTY_VALUE -2222.22
+#define THRESHOLD 0.8
+
 
 // Zip Function. This will return the combination between all
 // the elements of inputs. The output will be uniques and the
@@ -23,11 +25,13 @@ vector get_vector(int initial_point; int destination_point) {
 
 // This function will return the initial point to select and candidate direction
 // in order to get a proper initial orientation
-vector get_parallel_vector(int point; vector normal) {
+vector get_parallel_vector(int point; vector normal; int parallelism) {
    vector current, result = set(0.0,0.0,0.0);
    float new_dot, max_dot_product = EMPTY_VALUE;
    // Get the vectors combination through all the neighbours
    int nn[] = neighbours(0, point);
+   // Initialize return values
+   parallelism = 0;
    // Iterate between all the axis combination for the current points and it
    // the nearest neighbours connected to the point.
    foreach (int n; nn) {
@@ -38,15 +42,20 @@ vector get_parallel_vector(int point; vector normal) {
                 // previous one to store the more orthogonal one in the input geometry.
                 new_dot = dot(current,normal);
                 // If this result cos(angle) = 0, then this means they are orthognal
-                if (new_dot == 1){
+                if (new_dot == 1) {
+                        // Vectors parallel to each other
+                        parallelism = 1;
                         // If dot product is equal to 0 means both vector gave 90 angle (ortho)
                         return current;
                 } else {
                         // If not then, We have to take the higher value to 0 (absolute)
                         // Dot product doesn't return negative number so abs isn't necessary
-                        if (abs(new_dot) > abs(max_dot_product)) {
-                                                        max_dot_product = new_dot;
-                                                        result = current;
+                        if (abs(new_dot) > abs(max_dot_product) && new_dot > THRESHOLD ) {
+                                // Set orthogonal to true
+                                parallelism = 1;
+                                // Set current dot product as maximun and the current vector.
+                                max_dot_product = new_dot;
+                                result = current;
                         }
                 } 
    }
@@ -61,22 +70,23 @@ vector get_initial_normal(int orthogonal) {
     vector2 nn_vectors[];
     vector nn1, nn2;
         int nns[];
+        // Initialize value for orthogonal
         orthogonal = 0; 
     // Iterate through all the points to find the first point founded
     // Orthogonal to its nearest neighbours. if not found get the point with the
     // higher perpendicular angle.
     for (int i = 0; i < npoints(0); i++) {
-           nns = neighbours(0, i);
-           // Check for nn > 2
+        nns = neighbours(0, i);
+       // Check for nn > 2 (square vertices)
        if (len(nns) > 2) {
-                   // Set orthogonal to true
-                   orthogonal = 1;
+                   //Message With the output
+                   //printf("ORTHOGONAL");
                    // Get the vectors combination through all the neighbours
                    zip(nns, nn_vectors);
                    // Iterate between all the axis combination for the current points and it
                    // the nearest neighbours connected to the point.
                    foreach (vector2 nn; nn_vectors) {
-                            // Get the two vectors                  
+                                // Get the two vectors                  
                                 nn1 = get_vector(i,int(nn[0]));
                                 nn2 = get_vector(i,int(nn[1]));
                                 // Get the Angle between them and check if they are totally orthogonal 
@@ -84,20 +94,24 @@ vector get_initial_normal(int orthogonal) {
                                 // previous one to store the more orthogonal one in the input geometry.
                                 new_dot = dot(nn1,nn2);
                                 // If this result cos(angle) = 0, then this means they are orthognal
-                                if (new_dot == 0){
+                                if (new_dot == 0) {
+                                        // Set orthogonal to true
+                                        orthogonal = 1;
                                         // If dot product is equal to 0 means both vector gave 90 angle (ortho)
                                         return nn1;
                                 } else {
                                         // If not then, We have to take the higher value to 0 (absolute)
                                         // Dot product doesn't return negative number so abs isn't necessary
-                                        if (abs(new_dot) < abs(max_dot_product)) {
-                                                                        max_dot_product = new_dot;
-                                                                        result = nn1;
+                                        if (abs(new_dot) < abs(max_dot_product) && new_dot < ( 1 - THRESHOLD)) {
+                                                // Set orthogonal to true, since there is a vector that satisfied 
+                                                // condition
+                                                orthogonal = 1;
+                                                max_dot_product = new_dot;
+                                                result = nn1;
                                         }
                                 } 
-                                                                
                    }
-           }
+        }
     }
     // Finally set the pointseed with the temp point founded
     return result;
@@ -109,24 +123,32 @@ vector get_initial_normal(int orthogonal) {
 
 
 // Initialize the values for the computation
-vector normal_av = set(0.0, 0.0, 0.0);
+vector temp_vector, normal_av = set(0.0, 0.0, 0.0);
+int total_count = 0;
 int max_points_count = chi("max_points_count");
 // Check the total points to compute
-if (max_points_count == 0)
-    max_points_count = npoints(0);
+if (max_points_count == 0) max_points_count = npoints(0);
 
 //Get a point seed if there are orthogonal vectors
-int orthogonal;
+int orthogonal, parallel;
 vector initial_normal = get_initial_normal(orthogonal);
 
 //Loop for over all the points to get the average for the normals.
 for (int i = 0; i < max_points_count; i++) {
         // Check wether is an orthogonal geometry overall
     if (orthogonal) {
-                normal_av +=  get_parallel_vector(i,initial_normal );
+        // Get a pararello vector to this one.
+                temp_vector =  get_parallel_vector(i,initial_normal, parallel );
+                // Check if the current parallel vector ssatisfied with the condition           
+                if (parallel)  {
+                        normal_av += temp_vector;
+                        total_count     += 1;
+                }
+
         } else  {
-                // Take the normal from the current point toaccumulative
-                normal_av += point(0,"N",i);
+                        // Take the normal from the current point toaccumulative
+                        normal_av += point(0,"N",i);
+                        total_count += 1;
         }
 
 }
