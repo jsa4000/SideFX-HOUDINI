@@ -1,0 +1,34 @@
+//Create primitive from two points
+int create_prim(vector p1; vector p2; vector cd) {
+    // Check If this primitive it's going to be created into the current geometry
+    int new_p1 = addpoint(0,p1);
+    int new_p2 = addpoint(0,p2);
+    // Set the primitive color
+    setpointattrib(0, "Cd", new_p1, cd, "set"); 
+    setpointattrib(0, "Cd", new_p2, cd, "set"); 
+    
+    //Create new Poly line
+    int new_prim = addprim(0, "polyline");
+   // Add the priss normally
+    addvertex(0, new_prim, new_p1);
+    addvertex(0, new_prim, new_p2);
+    return new_prim;
+}
+
+// Channel Multiplier
+float multiplier = chf("multiplier");
+
+// Get vectors from Transformation Matrix.
+vector origin = {0.0,0.0,0.0};
+
+// GEt the transformation matrix from input 1
+int success;
+matrix3 transf_matrix = detailattrib(1,"M" ,0, success);
+vector side = set(transf_matrix.xx,transf_matrix.xy,transf_matrix.xz);
+vector Up = set(transf_matrix.yx,transf_matrix.yy,transf_matrix.yz);
+vector Normal = set(transf_matrix.zx,transf_matrix.zy,transf_matrix.zz);
+
+// Create the primitives and guides
+create_prim(origin, side, {1.0,0.0,0.0});
+create_prim(origin, Up, {0.0,1.0,0.0});
+create_prim(origin, Normal, {0.0,0.0,1.0});

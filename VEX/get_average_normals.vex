@@ -1,0 +1,143 @@
+#define EMPTY_VALUE -2222.22
+
+// Zip Function. This will return the combination between all
+// the elements of inputs. The output will be uniques and the
+// same index combination won't be considered.
+void zip(int input[]; vector2 output[]){
+    output = {};
+    vector2 temp;
+    for (int i = 0; i < len(input); i++){
+        for (int j = i + 1; j < len(input); j++){
+            temp = set (input[i], input[j]);
+            append(output, temp);
+        }
+    }
+}
+
+// Function that returns a normalized vector between the 
+// initial point and a destination point 
+vector get_vector(int initial_point; int destination_point) {
+        return normalize(point(0,"P",destination_point) - 
+                         point(0,"P",initial_point));
+}
+
+// This function will return the initial point to select and candidate direction
+// in order to get a proper initial orientation
+vector get_parallel_vector(int point; vector normal) {
+   vector current, result = set(0.0,0.0,0.0);
+   float new_dot, max_dot_product = EMPTY_VALUE;
+   // Get the vectors combination through all the neighbours
+   int nn[] = neighbours(0, point);
+   // Iterate between all the axis combination for the current points and it
+   // the nearest neighbours connected to the point.
+   foreach (int n; nn) {
+           // Get the vector between the current neigbour and the point                  
+                current = get_vector(point,n);
+                // Get the Angle between them and check if they are totally orthogonal 
+                // to each other. If not, the angle and the point will be compared with the
+                // previous one to store the more orthogonal one in the input geometry.
+                new_dot = dot(current,normal);
+                // If this result cos(angle) = 0, then this means they are orthognal
+                if (new_dot == 1){
+                        // If dot product is equal to 0 means both vector gave 90 angle (ortho)
+                        return current;
+                } else {
+                        // If not then, We have to take the higher value to 0 (absolute)
+                        // Dot product doesn't return negative number so abs isn't necessary
+                        if (abs(new_dot) > abs(max_dot_product)) {
+                                                        max_dot_product = new_dot;
+                                                        result = current;
+                        }
+                } 
+   }
+    // Finally set the pointseed with the temp point founded
+    return result;
+}
+
+// This function will return the initial normal to select
+vector get_initial_normal(int orthogonal) {
+    float new_dot, max_dot_product = EMPTY_VALUE;
+    vector result;
+    vector2 nn_vectors[];
+    vector nn1, nn2;
+        int nns[];
+        orthogonal = 0; 
+    // Iterate through all the points to find the first point founded
+    // Orthogonal to its nearest neighbours. if not found get the point with the
+    // higher perpendicular angle.
+    for (int i = 0; i < npoints(0); i++) {
+           nns = neighbours(0, i);
+           // Check for nn > 2
+       if (len(nns) > 2) {
+                   // Set orthogonal to true
+                   orthogonal = 1;
+                   // Get the vectors combination through all the neighbours
+                   zip(nns, nn_vectors);
+                   // Iterate between all the axis combination for the current points and it
+                   // the nearest neighbours connected to the point.
+                   foreach (vector2 nn; nn_vectors) {
+                            // Get the two vectors                  
+                                nn1 = get_vector(i,int(nn[0]));
+                                nn2 = get_vector(i,int(nn[1]));
+                                // Get the Angle between them and check if they are totally orthogonal 
+                                // to each other. If not, the angle and the point will be compared with the
+                                // previous one to store the more orthogonal one in the input geometry.
+                                new_dot = dot(nn1,nn2);
+                                // If this result cos(angle) = 0, then this means they are orthognal
+                                if (new_dot == 0){
+                                        // If dot product is equal to 0 means both vector gave 90 angle (ortho)
+                                        return nn1;
+                                } else {
+                                        // If not then, We have to take the higher value to 0 (absolute)
+                                        // Dot product doesn't return negative number so abs isn't necessary
+                                        if (abs(new_dot) < abs(max_dot_product)) {
+                                                                        max_dot_product = new_dot;
+                                                                        result = nn1;
+                                        }
+                                } 
+                                                                
+                   }
+           }
+    }
+    // Finally set the pointseed with the temp point founded
+    return result;
+}
+
+// The idea is to get the average of the Normals in the geometry
+// Also, if the geometry are based on polygons we wll take the average with the
+// nn parallel to the initial normal.
+
+
+// Initialize the values for the computation
+vector normal_av = set(0.0, 0.0, 0.0);
+int max_points_count = chi("max_points_count");
+// Check the total points to compute
+if (max_points_count == 0)
+    max_points_count = npoints(0);
+
+//Get a point seed if there are orthogonal vectors
+int orthogonal;
+vector initial_normal = get_initial_normal(orthogonal);
+
+//Loop for over all the points to get the average for the normals.
+for (int i = 0; i < max_points_count; i++) {
+        // Check wether is an orthogonal geometry overall
+    if (orthogonal) {
+                normal_av +=  get_parallel_vector(i,initial_normal );
+        } else  {
+                // Take the normal from the current point toaccumulative
+                normal_av += point(0,"N",i);
+        }
+
+}
+
+// Get the average for the normals computed
+normal_av = normalize(normal_av / max_points_count);
+
+// Check if normals are exacly equal in average
+if (normal_av == 0){
+    normal_av = set(0.0, 0.0, 1.0);
+}
+
+// Set the current normal average to detail attribute
+v@N= normal_av;

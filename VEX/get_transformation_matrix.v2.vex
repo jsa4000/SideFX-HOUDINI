@@ -1,114 +1,157 @@
-// Function that get the normalized vector between the 
-// initial point and it's nn nearest neighbour 
-vector get_vector_nn(int initial_point; int nn_num ) {
-        vector reference_Pos = point(0,"P",neighbour(0,initial_point,nn_num));
-        return normalize(point(0,"P",initial_point) - reference_Pos);
+#define EMPTY_VALUE -2222.22
+
+// Zip Function. This will return the combination between all
+// the elements of inputs. The output will be uniques and the
+// same index combination won't be considered.
+void zip(int input[]; vector2 output[]){
+    output = {};
+    vector2 temp;
+    for (int i = 0; i < len(input); i++){
+        for (int j = i + 1; j < len(input); j++){
+            temp = set (input[i], input[j]);
+            append(output, temp);
+        }
+    }
 }
 
-float EMPTY_VALUE = -2222.22;
+// Function that returns a normalized vector between the 
+// initial point and a destination point 
+vector get_vector(int initial_point; int destination_point) {
+        return normalize(point(0,"P",destination_point) - 
+                         point(0,"P",initial_point));
+}
 
-// First we will let's compute the averagin of the normals
-vector normal_av = set(0.0,0.0,0.0);
-vector current_N;
-
-
-//These two variables will be used to select the points to use:
-//
-//  pointseed: from 0 to the number of points
-//  pointdirection: the direction to take. The input only have 
-//                                two neighours.
-int pointseed = chi("point_seed");
-int pointdiection = chi("point_direction");
-
-// Initialize the values for the computation
-vector up_av = set(0.0,0.0,0.0);
-vector current_Up, cand0_Up, cand1_Up;
-float cosA, cosB;
-
-// Here I will check if the get procedural points seed it's active (pointseed = -1)
-if (pointseed == -1){
-        float max_dot_product = EMPTY_VALUE;
-        int pointseed_temp = -1;
-        
-        // Here I am going to iterate with in the points to find thee first points
-        // Orthogonal to its nearest neighbours. if not found get the point with the
-        // higher perpendicular angle.
-        for (int i = 0; i < @numpt; i++) {
-                // Get the two (first) nn connected to this points
-                vector nn1 = get_vector_nn(i,0);
-                vector nn2 = get_vector_nn(i,1);
+// This function will return the initial point to select and candidate direction
+// in order to get a proper initial orientation
+vector get_orthogonal_vector(int point; vector normal) {
+   vector current, result = set(0.0,0.0,0.0);
+   float new_dot, max_dot_product = EMPTY_VALUE;
+   // Get the vectors combination through all the neighbours
+   int nn[] = neighbours(0, point);
+   // Iterate between all the axis combination for the current points and it
+   // the nearest neighbours connected to the point.
+   foreach (int n; nn) {
+           // Get the vector between the current neigbour and the point                  
+                current = get_vector(point,n);
                 // Get the Angle between them and check if they are totally orthogonal 
                 // to each other. If not, the angle and the point will be compared with the
                 // previous one to store the more orthogonal one in the input geometry.
-                float new_dot = dot(nn1,nn2);
+                new_dot = dot(current,normal);
                 // If this result cos(angle) = 0, then this means they are orthognal
                 if (new_dot == 0){
-                        // If dot product is equal to 0 means both vector gave 90 angle (ortho)
-                        pointseed_temp = i;
-                        // Break the while since we have succesfully found the point we were looking for.
-                        break;
+                                // If dot product is equal to 0 means both vector gave 90 angle (ortho)
+                                return current;
                 } else {
-                        // If not then, We have to take the higher value to 0 (absolute)
-                        if (abs(new_dot) < abs(max_dot_product)) {
-                                max_dot_product = new_dot;
-                                pointseed_temp = i;
-                        }
+                                // If not then, We have to take the higher value to 0 (absolute)
+                                // Dot product doesn't return negative number so abs isn't necessary
+                                if (abs(new_dot) < abs(max_dot_product)) {
+                                                max_dot_product = new_dot;
+                                                result = current;
+                                }
                 } 
-        
-        }
-        // Finally set the pointseed with the temp point founded
-        pointseed = pointseed_temp;
+   }
+    // Finally set the pointseed with the temp point founded
+    return result;
 }
 
-// First we have to get a seed vector to be used as a reference.
-// by using the intial point seed and the direction 
-vector reference_Up = get_vector_nn(pointseed, pointdiection);
-int total_count = 0;
+// This function will return the initial point to select
+int get_initial_seed() {
+    float new_dot, max_dot_product = EMPTY_VALUE;
+    int pointseed_temp = -1;
+    vector2 nn_vectors[];
+    vector nn1, nn2;
+    // Iterate through all the points to find the first point founded
+    // Orthogonal to its nearest neighbours. if not found get the point with the
+    // higher perpendicular angle.
+    for (int i = 0; i < npoints(0); i++) {
+           // Get the vectors combination through all the neighbours
+           zip(neighbours(0, i), nn_vectors);
+           // Iterate between all the axis combination for the current points and it
+           // the nearest neighbours connected to the point.
+           foreach (vector2 nn; nn_vectors) {
+                   // Get the two vectors                  
+                        nn1 = get_vector(i,int(nn[0]));
+                        nn2 = get_vector(i,int(nn[1]));
+                        // Get the Angle between them and check if they are totally orthogonal 
+                        // to each other. If not, the angle and the point will be compared with the
+                        // previous one to store the more orthogonal one in the input geometry.
+                        new_dot = dot(nn1,nn2);
+                        // If this result cos(angle) = 0, then this means they are orthognal
+                        if (new_dot == 0){
+                                        // If dot product is equal to 0 means both vector gave 90 angle (ortho)
+                                        return i;
+                        } else {
+                                        // If not then, We have to take the higher value to 0 (absolute)
+                                        // Dot product doesn't return negative number so abs isn't necessary
+                                        if (abs(new_dot) < abs(max_dot_product)) {
+                                                        max_dot_product = new_dot;
+                                                        pointseed_temp = i;
+                                        }
+                        } 
+                                
+           }
+    }
+    // Finally set the pointseed with the temp point founded
+    return pointseed_temp;
+}
+
+// Get point seed point and threshold from parameters interface
+int pointseed = chi("point_seed");
 float threshold = chf("threshold");
 
+// Get the normal computed in previous nodes from details
+vector normal_av = v@N;
+if (normal_av == 0)
+    normal_av = set(0.0, 0.0, 1.0);
+
+// Check if the get procedural points seed it's active (pointseed = -1)
+if (pointseed == -1)
+    // Get the point seed randomilly and the reference dir
+    pointseed = get_initial_seed();
+    
+// Get an orthogonal vector using the normal and a nn using the seed
+vector reference_Up = get_orthogonal_vector(pointseed, normal_av);
+
+// Initialize variables
+vector up_av = set(0.0,0.0,0.0);
+vector current_Up, cand0_Up, cand1_Up;
+float dotA, dotB;
+vector2 nn_vectors[];
+
+// Set the initial counter for the number of candidates up vectors.
+int total_count = 0;
 //Loop for over all the points to get the average of the normals.
-for (int i = 0; i < @numpt; i++) {
-        // Get the normal for the current point position
-        current_N = point(0,"N",i);
-        // Add the current normal to the accumulative
-        normal_av += current_N;
-                
+for (int i = 0; i < npoints(0); i++) {
         //Initialize the current Up Vector
-        current_Up = set(EMPTY_VALUE,EMPTY_VALUE,EMPTY_VALUE);
-                
-        //Let's get the nns to compare with the reference Up vector 
-        cand0_Up = get_vector_nn(i, 0);
-        cand1_Up = get_vector_nn(i, 1);
-                
-        // Compute both dots product
-        cosA = (dot(cand0_Up, reference_Up));
-        cosB = (dot(cand1_Up, reference_Up));
-                
-       //This two vector must be smilar to 1 (or greater than threshold). 0 means to be perpendicular (cos).
-       if ( cosA => cosB && cosA > threshold ) {
-            current_Up = cand0_Up;
+        current_Up = set(EMPTY_VALUE, EMPTY_VALUE, EMPTY_VALUE);
+       // Get the vectors combination through all the neighbours
+       zip(neighbours(0, i), nn_vectors);
+       // Iterate between all the axis combination for the current points and it
+       // the nearest neighbours connected to the point.
+       foreach (vector2 nn; nn_vectors) {
+            //Let's get the nns to compare with the reference Up vector 
+            cand0_Up = get_vector(i, int(nn[0]));
+            cand1_Up = get_vector(i, int(nn[1]));
+            // Compute both dots product
+            dotA = (dot(cand0_Up, reference_Up));
+            dotB = (dot(cand1_Up, reference_Up));
+           //This two vector must be smilar to 1 (or greater than threshold). 0 means to be perpendicular (cos).
+           if ( dotA > dotB && dotA > threshold ) {
+                            current_Up = cand0_Up;
+           }
+           // Check for the other
+           if ( dotB > dotA && dotB > threshold ) {
+                            current_Up = cand1_Up;
+           }
+           // Let's filter or accumulate the candidates vectors
+           if (current_Up[0] != EMPTY_VALUE){
+                 // Add the current up vecor to the accumulative
+                  up_av += current_Up;
+                  total_count += 1;
+          }
        }
-                
-		// Check for the other
-		if ( cosB => cosA && cosB > threshold ) {
-				current_Up = cand1_Up;
-       }
-                
-		if (current_Up[0] != EMPTY_VALUE){
-			// Add the current up vector to the accumulative
-				up_av += current_Up;
-				total_count += 1;
-		}
-
 }
-
+    
 // Set the tranformation matrix (average and normalized)
-3@M = maketransform(normalize(normal_av / @numpt),
-           cross(normalize(up_av / total_count), normalize(normal_av / @numpt)));
-
-// In the Matrix transform. 
-// The middle column it's the up vector 
-// THe third columns it's the aim vector or the normal vector.
-
-// The first columns is calculated from the other two by using the cross product. This is the side.
+3@M = maketransform(normal_av,cross(normalize(up_av/total_count),normal_av));
                                                   
