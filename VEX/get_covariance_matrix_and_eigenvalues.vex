@@ -1,0 +1,85 @@
+// {} []
+
+vector  $pos,
+        $normal = 0,
+        $nearest_pos[],
+        $bbox_min, $bbox_max,
+        $centroid = 0;
+float   $max_dist;
+int     $handle,
+        $number,
+        $number_points;
+matrix3 $mat = 0;
+
+$number_points = $max_points;
+getbbox($bbox_min, $bbox_max);
+$max_dist = $bbox_max - $bbox_min; 
+
+
+//  find nearest points and store their position
+$handle = pcopen($file, "P", P, $max_dist, $number_points + 1);
+while(pciterate($handle))
+{
+    pcimport($handle, "P", $pos);
+    pcimport($handle, "point.number", $number);
+    if(ptnum != $number)
+    {
+        push($nearest_pos, $pos);
+        $centroid += $pos;
+    }
+}
+
+$centroid /= $number_points;
+
+
+//  compute covariance matrix
+float   $val11 = 0, $val12 = 0, $val13 = 0,
+        $val21 = 0, $val22 = 0, $val23 = 0,
+        $val31 = 0, $val32 = 0, $val33 = 0;
+
+foreach($pos; $nearest_pos)
+{
+    $val11 += ($pos.x - $centroid.x) * ($pos.x - $centroid.x);
+    $val12 += ($pos.x - $centroid.x) * ($pos.y - $centroid.y);
+    $val13 += ($pos.x - $centroid.x) * ($pos.z - $centroid.z);
+    $val21 += ($pos.y - $centroid.y) * ($pos.x - $centroid.x);
+    $val22 += ($pos.y - $centroid.y) * ($pos.y - $centroid.y);
+    $val23 += ($pos.y - $centroid.y) * ($pos.z - $centroid.z);
+    $val31 += ($pos.z - $centroid.z) * ($pos.x - $centroid.x);
+    $val32 += ($pos.z - $centroid.z) * ($pos.y - $centroid.y);
+    $val33 += ($pos.z - $centroid.z) * ($pos.z - $centroid.z);
+}
+
+$mat = set( $val11, $val12, $val13,
+            $val21, $val22, $val23,
+            $val31, $val32, $val33);
+$mat = invert($mat);
+
+
+//  compute the normal of the best fit plane
+vector  $vec1 = 1,
+        $vec2 = ($vec1 * $mat) / length($vec1 * $mat);
+int     $i = 0;
+
+while($vec1 != $vec2 && $i < $max_iterations)
+{
+    $vec1 = $vec2;
+    $vec2 = ($vec1 * $mat) / length($vec1 * $mat);
+    $i += 1;
+}
+
+
+N = normalize($vec2);
+
+//  orient normal_direction
+if($orient_normals)
+    vector $vec_cam = normalize($cam_pos - P);
+    if(dot(N, $vec_cam) < 0)
+        N = -N;
+//  project points an best fitting plane
+if($project_points)
+    P -= dot(P - $centroid, $vec2) * $vec2;
+
+if($add_centroid)
+    addattribute("centroid", $centroid);
+    
