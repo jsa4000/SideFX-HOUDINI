@@ -1,0 +1,114 @@
+// Get the best-fit eigen vector for the matrix
+vector get_eigenvector(matrix3 mat; int max_iterations) {
+    //  compute the normal of the best fit plane
+    vector  vec1 = 1,
+            vec2 = (vec1 * mat) / length(vec1 * mat);
+    int     i = 0;
+    
+    // Training line to fit the cov matrix 
+    while(vec1 != vec2 && i < max_iterations) {
+        vec1 = vec2;
+        vec2 = (vec1 * mat) / length(vec1 * mat);
+        i += 1;
+    }
+    /// Return the line obtained
+    return normalize(vec2);
+}
+
+// Returns a zeros based 3x3 matrix
+matrix3 zeros() {
+    matrix3 result = ident();
+    result.xx = 0.0;
+    result.yy = 0.0;
+    result.zz = 0.0;
+    return result;
+}
+
+// Get the centroid for the current Input 0
+vector get_centroid()  {
+	vector pos, centroid = set (0.0,0.0,0.0);
+
+	// Sum all the positions to ge tthe average with the mean
+	for (int n = 0; n < npoints(0); n++) {
+		pos = point(0,"P",n);    
+		centroid += pos;
+	}
+
+	// Compute the mean for all the points
+	return centroid / npoints(0);
+}
+
+//////////////////////////////////////////
+// PCA- Principal Component Analysis
+/////////////////////////////////////////
+
+// The covariance it's compute as follows:
+// COV(X,Y) = SUM( (X - Xmean) * (Y - Ymean) ) / (N - 1)
+
+//
+// ADDITIONALLY FOR MACHINE LEARNING POURPOSES
+//
+// This will allow us to compute the Standard Deviation for the correlation:
+//
+// To compute the variance (x,x) and covartiance (x,y):
+//      V(X) = SUM ((X - Xmean)^2) / (n - 1)
+//
+// To compute the Standard deviation
+//  Sd(X = SQRT(V(X)) ->
+//  Sd(X) =  SQRT (SUM ((X - Xmean)^2) / (n - 1))
+//
+// For population is used n instead n - 1.  (n -1) is used for samples.
+//
+// CORR(X,Y) = COV(X,Y) / ( Sd(X) * Sd(Y)   
+
+// In order to compute the covariance matrix for the three axises. we have to
+// compute the covariance between, (X,Y) (X,Z) and (Y,Z).
+
+//    X   Y   Z
+// X  1   ?   ?
+// Y      1   ?
+// Z          1 
+
+// Let's create a matrix 3x3 with the result
+// The formule of the covariance is the following
+matrix3 sample, cov;
+vector pos;
+
+// Initialize the cov matrix 3x3
+cov = zeros();
+
+// Compute the (X - Xmean) for all the points (centroid).
+vector centroid = get_centroid();
+
+// Sum all the positions to get tthe average with the mean
+for (int n = 0; n < npoints(0); n++) {
+    pos = point(0,"P",n);   
+    // First Row of the cov matrix
+    sample.xx = (pos.x - centroid.x) * (pos.x - centroid.x);
+    sample.xy = (pos.x - centroid.x) * (pos.y - centroid.y);
+    sample.xz = (pos.x - centroid.x) * (pos.z - centroid.z);
+    // Second Row of the cov matrix
+    sample.yx = (pos.y - centroid.y) * (pos.x - centroid.x);
+    sample.yy = (pos.y - centroid.y) * (pos.y - centroid.y);
+    sample.yz = (pos.y - centroid.y) * (pos.z - centroid.z);
+    // Third Row of the cov matrix
+    sample.zx = (pos.z - centroid.z) * (pos.x - centroid.x);
+    sample.zy = (pos.z - centroid.z) * (pos.y - centroid.y);
+    sample.zz = (pos.z - centroid.z) * (pos.z - centroid.z);
+    // Let's add the current sample with the result
+    cov += sample;
+}
+// Compute the mean for the cov computed
+cov = (cov / (npoints(0)));;
+
+// Get the current max iterations
+int max_iterations = chi("max_iterations");
+
+// Get the cov matrix 
+matrix3 mat = cov;
+matrix3 mat_inv = invert(mat);
+
+// Get the two axis
+v@normal = get_eigenvector(mat, max_iterations);
+v@up = cross(get_eigenvector(mat_inv, max_iterations), v@normal );
+v@side = cross(v@up, v@normal );
