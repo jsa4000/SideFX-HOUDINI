@@ -33,13 +33,20 @@ Following a link to the Wikipedia:
 NOTES:  Always try to maintain Scale for all geoemetry created.
 		The idea is to build an structure that could be reused for any pouprpose.
 		Global Seed so the sections and some of its characteristics will be maintained along the construction. (type of windows, style, architecture, etc...)
-			
 	
 3.1 Structure Generator (2 Inputs)
 
+	This structure will be generated taking into account the scale and height of the building. 
+	For each section, a minimun height will be set to define to compute the number of sections.
+	
+	First and last section are optional, since a building cound not have any of those sections. Also the separation between the floors is also optional
+	
+	
+	
+
 3.1.1 First input
 
-	The structure Generator will allow the possibility to accept different inputs that will be used to generate the shape and the form of the building.
+	The structure Generator will allow the possibility to accept different type of inputs. The input will be used to generate the shape and the form of the building.
 		- Shape that will be repeated along an axis. 
 		- Polygon Geometry (block) with the overal shape the the building will have
 	Both inputs, shape and block could be also modified with a ramp so the shilouette.
@@ -50,9 +57,21 @@ NOTES:  Always try to maintain Scale for all geoemetry created.
 3.1.2 Second Input	
 		
 	The structure could also admit another kind of inputs so they will be used to stamp them along the entire building. This could be stairs, pipes, ivys, etc..
-		
-		
-.3.2 Section Generator(2 Inputs)
+	This could be done inside or outside the main loop that will generate the different sections.
 
+
+3.1.3 Functionality
+
+	The structure wil
+
+	
+
+		
+		
+3.2 Section Generator(2 Inputs)
+
+
+
+3.3 Composition Manager (2 Inputs)
 		
 	
