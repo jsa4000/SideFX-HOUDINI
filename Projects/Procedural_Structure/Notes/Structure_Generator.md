@@ -55,7 +55,7 @@ won't have anything or there is going to be another thing like stair, pipes, etc
 	Some global setting that will be propaged for all the generatos...
 	With this I mean the type of windows, global seed, height of the windows, level of detail, textures, etc..
 		   
-3. Functionality
+3. Implementation
 
 Additionally this node will allow the possibility to create additional features that will be used globallty to the building instead being determined
 by each section. In order to do this the node will tell to the section generator which parts of the section mustn't be populated. This will be similar
@@ -64,6 +64,7 @@ when detection if a part of the section is intersecting with another building.
 Could be interesting to create dynamically the number of sections to populate the buildings. However by default the tool will only allow the basic
 sections that could be found in a simple building.
 
+4. Future
 
 
 
